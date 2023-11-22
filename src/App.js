@@ -1,5 +1,3 @@
-import "./styles.css";
-
 import React from "react";
 import { Stage, Layer, Rect, Text, Line } from 'react-konva';
 
@@ -10,42 +8,77 @@ const generateRectangles = () => {
   ];
 };
 
-const INITIAL_STATE = generateRectangles();
-
 export default function App() {
-
-
-  const [rects, setRects] = React.useState(INITIAL_STATE);
+  const [rects, setRects] = React.useState(generateRectangles());
+  const [lines, setLines] = React.useState([]);
+  const [drawing, setDrawing] = React.useState(false);
+  const [startPoint, setStartPoint] = React.useState({ x: 0, y: 0 });
 
   const handleDragStart = (e) => {
     const id = e.target.id();
     setRects(
-      rects.map((rect) => {
-        return {
-          ...rect,
-          isDragging: rect.id === id,
-        };
-      })
-    );
-  };
-  const handleDragEnd = (e) => {
-    setRects(
-      rects.map((rect) => {
-        return {
-          ...rect,
-          isDragging: false,
-        };
-      })
+      rects.map((rect) => ({
+        ...rect,
+        isDragging: rect.id === id,
+      }))
     );
   };
 
+  const handleDragEnd = () => {
+    setRects(
+      rects.map((rect) => ({
+        ...rect,
+        isDragging: false,
+      }))
+    );
+  };
+
+  const handleMouseDown = (e) => {
+    const stage = e.target.getStage();
+    const position = stage.getPointerPosition();
+    setDrawing(true);
+    setStartPoint(position);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!drawing) {
+      return;
+    }
+    const stage = e.target.getStage();
+    const position = stage.getPointerPosition();
+
+    const newLines = [
+      ...lines.filter((line, index) => index < lines.length - 1),
+      {
+        id: `line-${lines.length}`,
+        from: { ...startPoint },
+        to: { ...position },
+      },
+    ];
+    setLines(newLines);
+  };
+
+  const handleMouseUp = () => {
+    setDrawing(false);
+  };
+
   return (
-    // Stage - is a div wrapper
-    // Layer - is an actual 2d canvas element, so you can have several layers inside the stage
-    // Rect and Circle are not DOM elements. They are 2d shapes on canvas
-    <Stage width={window.innerWidth} height={window.innerHeight}>
+    <Stage
+      width={window.innerWidth}
+      height={window.innerHeight}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+    >
       <Layer>
         <Text text="Konva Drag and Drop " x={300} y={10} fontSize={15} />
+        {lines.map((line) => (
+          <Line
+            key={line.id}
+            points={[line.from.x, line.from.y, line.to.x, line.to.y]}
+            stroke="black"
+          />
+        ))}
         {rects.map((rect) => (
           <Rect
             key={rect.id}
@@ -63,9 +96,7 @@ export default function App() {
             onDragEnd={handleDragEnd}
           />
         ))}
-        {/* <Rect x={30} y={30} width={50} height={50} fill="black" /> */}
       </Layer>
     </Stage>
   );
 }
-
